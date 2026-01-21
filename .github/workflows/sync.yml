@@ -1,0 +1,17 @@
+name: Sync Data
+
+on:
+  schedule:
+    - cron: '0 * * * *'
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Sync D1 to GitHub
+        run: |
+          curl -X POST "https://${{ vars.DOMAIN }}/admin/sync" \
+            -H "Authorization: Bearer ${{ secrets.ADMIN_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d '{"direction": "to_github"}'

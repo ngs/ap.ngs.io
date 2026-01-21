@@ -1,0 +1,58 @@
+name: Add New Account
+
+on:
+  workflow_dispatch:
+    inputs:
+      handle:
+        description: 'Account handle'
+        required: true
+      name:
+        description: 'Display name'
+        required: true
+
+jobs:
+  add-account:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Generate RSA key pair
+        run: |
+          mkdir -p accounts/${{ github.event.inputs.handle }}/{posts,media,data/received}
+          openssl genrsa -out private_key.pem 2048
+          openssl rsa -in private_key.pem -pubout -out accounts/${{ github.event.inputs.handle }}/public_key.pem
+          echo "PRIVATE_KEY<<EOF" >> $GITHUB_ENV
+          cat private_key.pem >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+          rm private_key.pem
+
+      - name: Create files
+        run: |
+          cat > accounts/${{ github.event.inputs.handle }}/profile.json << 'EOF'
+          {
+            "name": "${{ github.event.inputs.name }}",
+            "summary": "",
+            "icon": null,
+            "image": null,
+            "manuallyApprovesFollowers": false,
+            "discoverable": true
+          }
+          EOF
+          echo '[]' > accounts/${{ github.event.inputs.handle }}/data/followers.json
+          echo '[]' > accounts/${{ github.event.inputs.handle }}/data/following.json
+          echo '[]' > accounts/${{ github.event.inputs.handle }}/data/received/replies.json
+          echo '[]' > accounts/${{ github.event.inputs.handle }}/data/received/likes.json
+          echo '[]' > accounts/${{ github.event.inputs.handle }}/data/received/boosts.json
+
+      - name: Commit
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add accounts/${{ github.event.inputs.handle }}
+          git commit -m "Add account: ${{ github.event.inputs.handle }}"
+          git push
+
+      - name: Output private key
+        run: |
+          echo "Add this as GitHub Secret: ACCOUNT_${{ github.event.inputs.handle }}_PRIVATE_KEY"
+          echo "${{ env.PRIVATE_KEY }}"

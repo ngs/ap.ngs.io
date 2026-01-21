@@ -1,0 +1,20 @@
+compatibility_date = "2024-01-01"
+compatibility_flags = ["nodejs_compat"]
+main = "src/index.ts"
+name = "activitypub-server"
+
+[[d1_databases]]
+binding = "DB"
+database_id = "18ba18c4-56f1-4855-b1f4-32349de7ebff"
+database_name = "activitypub"
+
+[vars]
+DOMAIN = "ap.ngs.io"
+GITHUB_REPO = "ngs/ap.ngs.io-data"
+
+# Secrets (set via wrangler secret put from GitHub Actions)
+# GITHUB_TOKEN
+# ADMIN_TOKEN
+# PRIVATE_KEY_ngs
+# PRIVATE_KEY_alice
+# ... (per account)

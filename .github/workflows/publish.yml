@@ -1,0 +1,45 @@
+name: Publish Posts
+
+on:
+  push:
+    paths: ['accounts/*/posts/**', 'accounts/*/profile.json']
+  workflow_dispatch:
+    inputs:
+      handle:
+        description: 'Account handle to sync'
+        required: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Get changed accounts
+        id: changed
+        run: |
+          if [ -n "${{ github.event.inputs.handle }}" ]; then
+            echo "handles=${{ github.event.inputs.handle }}" >> $GITHUB_OUTPUT
+          else
+            handles=$(git diff --name-only HEAD~1 HEAD -- 'accounts/*/posts/*.md' 'accounts/*/profile.json' | \
+              sed -n 's|accounts/\([^/]*\)/.*|\1|p' | sort -u | tr '\n' ',' | sed 's/,$//')
+            echo "handles=$handles" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Trigger sync and publish
+        if: steps.changed.outputs.handles != ''
+        run: |
+          IFS=',' read -ra HANDLES <<< "${{ steps.changed.outputs.handles }}"
+          for handle in "${HANDLES[@]}"; do
+            curl -X POST "https://${{ vars.DOMAIN }}/admin/sync" \
+              -H "Authorization: Bearer ${{ secrets.ADMIN_TOKEN }}" \
+              -H "Content-Type: application/json" \
+              -d "{\"handle\": \"$handle\", \"direction\": \"from_github\"}"
+
+            curl -X POST "https://${{ vars.DOMAIN }}/admin/publish" \
+              -H "Authorization: Bearer ${{ secrets.ADMIN_TOKEN }}" \
+              -H "Content-Type: application/json" \
+              -d "{\"handle\": \"$handle\"}"
+          done
