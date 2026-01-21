@@ -22,61 +22,51 @@ interface FollowsPageProps {
 }
 
 export const FollowsPage: FC<FollowsPageProps> = (props) => {
-  const title = props.type === 'followers'
-    ? `Followers of ${props.name}`
-    : `${props.name} is following`;
+  const title = props.type === 'followers' ? 'Followers' : 'Following';
   const baseUrl = `https://${props.domain}/users/${props.handle}/${props.type}`;
 
   return (
-    <Layout title={`${title} (@${props.handle}@${props.domain})`} domain={props.domain}>
-      <div class="d-flex flex-items-center mb-4">
-        <a href={`https://${props.domain}/users/${props.handle}`} class="Link--secondary mr-2">
-          ← Back to profile
-        </a>
-      </div>
-      <h1 class="h2 mb-4">{title}</h1>
-      <div class="Box">
-        <div class="Box-header d-flex flex-items-center flex-justify-between">
-          <h2 class="Box-title">{props.type === 'followers' ? 'Followers' : 'Following'}</h2>
-          <span class="Counter">{props.totalCount}</span>
-        </div>
-        {props.users.map(user => (
-          <div class="Box-row d-flex flex-items-center">
-            <a href={user.actorUrl} class="d-flex flex-items-center Link--primary no-underline" target="_blank" rel="noopener">
-              {user.iconUrl ? (
-                <img src={user.iconUrl} alt={user.name || user.preferredUsername || 'Unknown'} class="avatar avatar-small circle mr-3" />
-              ) : (
-                <div class="avatar avatar-small circle mr-3 color-bg-subtle d-flex flex-items-center flex-justify-center">
-                  <span>{(user.preferredUsername || '?').charAt(0).toUpperCase()}</span>
+    <Layout title={`${title} - ${props.name}`} domain={props.domain}>
+      <div class="follows-page">
+        <header class="follows-header">
+          <a href={`https://${props.domain}/@${props.handle}`} class="back-link">← {props.name}</a>
+          <span class="follows-title">{title}</span>
+          <span class="follows-count">{props.totalCount}</span>
+        </header>
+
+        {props.users.length > 0 ? (
+          <div class="follows-list">
+            {props.users.map(user => (
+              <a href={user.actorUrl} class="follow-item" target="_blank" rel="noopener">
+                {user.iconUrl ? (
+                  <img src={user.iconUrl} alt="" class="follow-avatar" />
+                ) : (
+                  <span class="follow-avatar follow-avatar--placeholder">
+                    {(user.preferredUsername || '?').charAt(0).toUpperCase()}
+                  </span>
+                )}
+                <div class="follow-info">
+                  <div class="follow-name">{user.name || user.preferredUsername || 'Unknown'}</div>
+                  <div class="follow-handle">@{user.preferredUsername || 'unknown'}@{user.domain}</div>
                 </div>
-              )}
-              <div>
-                <span class="text-bold">{user.name || user.preferredUsername || 'Unknown'}</span>
-                <span class="color-fg-muted ml-1">
-                  @{user.preferredUsername || 'unknown'}@{user.domain}
-                </span>
-              </div>
-            </a>
+              </a>
+            ))}
           </div>
-        ))}
-        {props.users.length === 0 && (
-          <div class="Box-row color-fg-muted">
-            <p>No {props.type} yet</p>
-          </div>
+        ) : (
+          <p class="empty-state">No {props.type} yet</p>
+        )}
+
+        {(props.hasPrev || props.hasNext) && (
+          <nav class="pagination">
+            {props.hasPrev ? (
+              <a href={`${baseUrl}?page=${props.page - 1}`}>← Previous</a>
+            ) : <span />}
+            {props.hasNext ? (
+              <a href={`${baseUrl}?page=${props.page + 1}`}>Next →</a>
+            ) : <span />}
+          </nav>
         )}
       </div>
-      {(props.hasPrev || props.hasNext) && (
-        <div class="d-flex flex-justify-between mt-4">
-          {props.hasPrev ? (
-            <a href={`${baseUrl}?page=${props.page - 1}`} class="btn">← Previous</a>
-          ) : (
-            <span />
-          )}
-          {props.hasNext && (
-            <a href={`${baseUrl}?page=${props.page + 1}`} class="btn">Next →</a>
-          )}
-        </div>
-      )}
     </Layout>
   );
 };

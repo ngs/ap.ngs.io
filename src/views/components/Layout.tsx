@@ -1,38 +1,65 @@
-import type { FC, PropsWithChildren } from 'hono/jsx';
+import type { FC, PropsWithChildren } from "hono/jsx";
+import { css } from "../../styles/css";
 
 interface LayoutProps {
   title: string;
   domain: string;
 }
 
-export const Layout: FC<PropsWithChildren<LayoutProps>> = ({ title, domain, children }) => (
-  <html lang="en" data-color-mode="auto" data-light-theme="light" data-dark-theme="dark">
+const lightboxScript = `
+  document.addEventListener('DOMContentLoaded', function() {
+    const lightbox = document.getElementById('lightbox');
+    const lightboxImg = document.getElementById('lightbox-img');
+
+    document.querySelectorAll('[data-lightbox]').forEach(function(link) {
+      link.addEventListener('click', function(e) {
+        e.preventDefault();
+        lightboxImg.src = this.href;
+        lightbox.classList.add('is-open');
+      });
+    });
+
+    lightbox.addEventListener('click', function() {
+      lightbox.classList.remove('is-open');
+      lightboxImg.src = '';
+    });
+
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        lightbox.classList.remove('is-open');
+        lightboxImg.src = '';
+      }
+    });
+  });
+`;
+
+export const Layout: FC<PropsWithChildren<LayoutProps>> = ({
+  title,
+  domain,
+  children,
+}) => (
+  <html lang="en">
     <head>
       <meta charset="UTF-8" />
       <meta name="viewport" content="width=device-width, initial-scale=1.0" />
       <title>{title}</title>
-      <link href="https://unpkg.com/@primer/css@21/dist/primer.css" rel="stylesheet" />
-      <style>{`
-        body { min-height: 100vh; display: flex; flex-direction: column; }
-        main { flex: 1; }
-        .avatar-large { width: 120px; height: 120px; }
-        .header-image { width: 100%; height: 200px; object-fit: cover; }
-      `}</style>
+      <style dangerouslySetInnerHTML={{ __html: css }} />
     </head>
     <body>
-      <div class="Header">
-        <div class="Header-item">
-          <a href={`https://${domain}/`} class="Header-link f4 d-flex flex-items-center">
-            <span>{domain}</span>
-          </a>
-        </div>
-      </div>
-      <main class="container-lg p-4">
-        {children}
-      </main>
-      <footer class="container-lg p-4 color-fg-muted text-center">
-        <p>Powered by <a href="https://github.com/ngs/ap.ngs.io" class="Link">ActivityPub Personal Server</a></p>
+      <header class="site-header">
+        <a href={`https://${domain}/`}>{domain}</a>
+      </header>
+      <main>{children}</main>
+      <footer class="site-footer">
+        <a href="https://github.com/ngs/ap.ngs.io">
+          ActivityPub Personal Server
+        </a>
       </footer>
+      <div id="lightbox" class="lightbox">
+        <span class="lightbox-close">&times;</span>
+        <img id="lightbox-img" src="" alt="" />
+      </div>
+      <script dangerouslySetInnerHTML={{ __html: lightboxScript }} />
     </body>
   </html>
 );

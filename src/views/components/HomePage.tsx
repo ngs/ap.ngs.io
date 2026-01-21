@@ -14,33 +14,27 @@ interface HomePageProps {
 
 export const HomePage: FC<HomePageProps> = ({ domain, accounts }) => (
   <Layout title={domain} domain={domain}>
-    <h1 class="h2 mb-4">{domain}</h1>
-    <div class="Box">
-      <div class="Box-header">
-        <h2 class="Box-title">Accounts</h2>
-      </div>
-      {accounts.map(account => (
-        <div class="Box-row d-flex flex-items-center">
-          <a href={`https://${domain}/users/${account.handle}`} class="d-flex flex-items-center Link--primary no-underline">
+    <h1 class="home-title">{domain}</h1>
+    {accounts.length > 0 ? (
+      <div class="accounts-list">
+        {accounts.map(account => (
+          <a href={`https://${domain}/@${account.handle}`} class="account-item">
             {account.iconUrl ? (
-              <img src={account.iconUrl} alt={account.name} class="avatar avatar-small circle mr-3" />
+              <img src={account.iconUrl} alt="" class="account-avatar" />
             ) : (
-              <div class="avatar avatar-small circle mr-3 color-bg-subtle d-flex flex-items-center flex-justify-center">
-                <span>{account.handle.charAt(0).toUpperCase()}</span>
-              </div>
+              <span class="account-avatar account-avatar--placeholder">
+                {account.handle.charAt(0).toUpperCase()}
+              </span>
             )}
             <div>
-              <span class="text-bold">{account.name}</span>
-              <span class="color-fg-muted ml-1">@{account.handle}@{domain}</span>
+              <div class="account-name">{account.name}</div>
+              <div class="account-handle">@{account.handle}@{domain}</div>
             </div>
           </a>
-        </div>
-      ))}
-      {accounts.length === 0 && (
-        <div class="Box-row color-fg-muted">
-          <p>No accounts yet</p>
-        </div>
-      )}
-    </div>
+        ))}
+      </div>
+    ) : (
+      <p class="empty-state">No accounts yet</p>
+    )}
   </Layout>
 );

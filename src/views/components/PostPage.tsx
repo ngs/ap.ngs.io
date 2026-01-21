@@ -24,38 +24,41 @@ const formatDate = (isoString: string): string => {
 };
 
 export const PostPage: FC<PostPageProps> = (props) => (
-  <Layout title={`Post by ${props.name} (@${props.handle}@${props.domain})`} domain={props.domain}>
-    <article class="Box">
-      <div class="Box-header d-flex flex-items-center">
-        <a href={`https://${props.domain}/users/${props.handle}`} class="d-flex flex-items-center Link--primary no-underline">
+  <Layout title={`${props.name} on ${props.domain}`} domain={props.domain}>
+    <article class="post-detail">
+      {/* Author - secondary, compact */}
+      <header class="post-author">
+        <a href={`https://${props.domain}/@${props.handle}`} class="author-link">
           {props.iconUrl ? (
-            <img src={props.iconUrl} alt={props.name} class="avatar avatar-small circle mr-2" />
+            <img src={props.iconUrl} alt="" class="author-avatar" />
           ) : (
-            <div class="avatar avatar-small circle mr-2 color-bg-subtle d-flex flex-items-center flex-justify-center">
-              <span>{props.handle.charAt(0).toUpperCase()}</span>
-            </div>
+            <span class="author-avatar author-avatar--placeholder">
+              {props.handle.charAt(0).toUpperCase()}
+            </span>
           )}
-          <div>
-            <span class="text-bold">{props.name}</span>
-            <span class="color-fg-muted ml-1">@{props.handle}@{props.domain}</span>
-          </div>
+          <span class="author-name">{props.name}</span>
+          <span class="author-handle">@{props.handle}@{props.domain}</span>
         </a>
-      </div>
-      <div class="Box-body">
-        <div class="mb-3" dangerouslySetInnerHTML={{ __html: props.contentHtml }} />
-        {props.mediaUrls.length > 0 && (
-          <div class="d-flex flex-wrap gap-2 mb-3">
-            {props.mediaUrls.map(url => (
-              <a href={url} target="_blank">
-                <img src={url} alt="" class="rounded-2" style="max-width: 100%; max-height: 400px; object-fit: contain;" />
-              </a>
-            ))}
-          </div>
-        )}
-        <div class="f6 color-fg-muted">
-          <time datetime={props.publishedAt}>{formatDate(props.publishedAt)}</time>
+      </header>
+
+      {/* Content - primary */}
+      <div class="post-content" dangerouslySetInnerHTML={{ __html: props.contentHtml }} />
+
+      {/* Media - subordinate to content */}
+      {props.mediaUrls.length > 0 && (
+        <div class="post-media">
+          {props.mediaUrls.map(url => (
+            <a href={url} data-lightbox class="media-link">
+              <img src={url} alt="" class="media-image" loading="lazy" />
+            </a>
+          ))}
         </div>
-      </div>
+      )}
+
+      {/* Meta - tertiary */}
+      <footer class="post-meta">
+        <time datetime={props.publishedAt}>{formatDate(props.publishedAt)}</time>
+      </footer>
     </article>
   </Layout>
 );

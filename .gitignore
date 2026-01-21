@@ -5,3 +5,6 @@ dist/
 .env
 *.log
 .DS_Store
+
+# Generated
+src/styles/css.ts
