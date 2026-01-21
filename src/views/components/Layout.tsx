@@ -6,10 +6,11 @@ interface LayoutProps {
   domain: string;
 }
 
-const lightboxScript = `
+const clientScript = `
   document.addEventListener('DOMContentLoaded', function() {
-    const lightbox = document.getElementById('lightbox');
-    const lightboxImg = document.getElementById('lightbox-img');
+    // Lightbox
+    var lightbox = document.getElementById('lightbox');
+    var lightboxImg = document.getElementById('lightbox-img');
 
     document.querySelectorAll('[data-lightbox]').forEach(function(link) {
       link.addEventListener('click', function(e) {
@@ -29,6 +30,18 @@ const lightboxScript = `
         lightbox.classList.remove('is-open');
         lightboxImg.src = '';
       }
+    });
+
+    // Format dates in user's timezone
+    document.querySelectorAll('time[datetime]').forEach(function(el) {
+      var date = new Date(el.getAttribute('datetime'));
+      el.textContent = date.toLocaleDateString(undefined, {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
     });
   });
 `;
@@ -59,7 +72,7 @@ export const Layout: FC<PropsWithChildren<LayoutProps>> = ({
         <span class="lightbox-close">&times;</span>
         <img id="lightbox-img" src="" alt="" />
       </div>
-      <script dangerouslySetInnerHTML={{ __html: lightboxScript }} />
+      <script dangerouslySetInnerHTML={{ __html: clientScript }} />
     </body>
   </html>
 );

@@ -1,5 +1,5 @@
-import type { FC } from 'hono/jsx';
-import { Layout } from './Layout';
+import type { FC } from "hono/jsx";
+import { Layout } from "./Layout";
 
 interface Post {
   id: string;
@@ -23,11 +23,11 @@ interface ProfilePageProps {
 
 const formatSummary = (summary: string): string => {
   return summary
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/\n/g, '<br>')
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/\n/g, "<br>")
     .replace(
       /(https?:\/\/[^\s<]+)/g,
       '<a href="$1" rel="nofollow noopener" target="_blank">$1</a>'
@@ -36,15 +36,20 @@ const formatSummary = (summary: string): string => {
 
 const formatDate = (isoString: string): string => {
   const date = new Date(isoString);
-  return date.toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
+  return date.toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
   });
 };
 
 export const ProfilePage: FC<ProfilePageProps> = (props) => (
-  <Layout title={`${props.name} (@${props.handle}@${props.domain})`} domain={props.domain}>
+  <Layout
+    title={`${props.name} (@${props.handle}@${props.domain})`}
+    domain={props.domain}
+  >
     <div class="profile">
       {/* Header: Avatar + Info */}
       <header class="profile-header">
@@ -57,7 +62,9 @@ export const ProfilePage: FC<ProfilePageProps> = (props) => (
         )}
         <div class="profile-info">
           <h1 class="profile-name">{props.name}</h1>
-          <p class="profile-handle">@{props.handle}@{props.domain}</p>
+          <p class="profile-handle">
+            @{props.handle}@{props.domain}
+          </p>
           <div class="profile-stats">
             <a href={`https://${props.domain}/users/${props.handle}/followers`}>
               <strong>{props.followersCount}</strong> followers
@@ -71,7 +78,10 @@ export const ProfilePage: FC<ProfilePageProps> = (props) => (
 
       {/* Bio */}
       {props.summary && (
-        <section class="profile-bio" dangerouslySetInnerHTML={{ __html: formatSummary(props.summary) }} />
+        <section
+          class="profile-bio"
+          dangerouslySetInnerHTML={{ __html: formatSummary(props.summary) }}
+        />
       )}
 
       {/* Posts */}
@@ -79,12 +89,15 @@ export const ProfilePage: FC<ProfilePageProps> = (props) => (
         <h2 class="posts-title">Posts</h2>
         {props.posts.length > 0 ? (
           <div class="posts-list">
-            {props.posts.map(post => (
+            {props.posts.map((post) => (
               <article class="post-item">
-                <div class="post-item-content" dangerouslySetInnerHTML={{ __html: post.contentHtml }} />
+                <div
+                  class="post-item-content"
+                  dangerouslySetInnerHTML={{ __html: post.contentHtml }}
+                />
                 {post.mediaUrls.length > 0 && (
                   <div class="post-item-media">
-                    {post.mediaUrls.map(url => (
+                    {post.mediaUrls.map((url) => (
                       <a href={url} data-lightbox>
                         <img src={url} alt="" loading="lazy" />
                       </a>
@@ -92,8 +105,10 @@ export const ProfilePage: FC<ProfilePageProps> = (props) => (
                   </div>
                 )}
                 <div class="post-item-meta">
-                  <a href={`https://${props.domain}/@${props.handle}/${post.id}`}>
-                    {formatDate(post.publishedAt)}
+                  <a
+                    href={`https://${props.domain}/@${props.handle}/${post.id}`}
+                  >
+                    <time datetime={post.publishedAt}>{formatDate(post.publishedAt)}</time>
                   </a>
                 </div>
               </article>

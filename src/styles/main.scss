@@ -463,7 +463,7 @@ a.follow-item {
   flex-direction: column;
 }
 
-.account-item {
+a.account-item {
   display: flex;
   align-items: center;
   gap: $space-md;
@@ -472,6 +472,12 @@ a.follow-item {
 
   &:last-child {
     border-bottom: none;
+  }
+
+  &:hover {
+    text-decoration: none;
+    opacity: 0.8;
+    transition: opacity 0.2s ease;
   }
 }
 
