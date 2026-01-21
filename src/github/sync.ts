@@ -154,8 +154,9 @@ export async function syncToGitHub(env: Env): Promise<{ synced: number }> {
       2
     );
 
-    await putGitHubFile(`accounts/${handle}/data/followers.json`, followersJson, 'Sync followers', env);
-    synced++;
+    if (await putGitHubFile(`accounts/${handle}/data/followers.json`, followersJson, 'Sync followers', env)) {
+      synced++;
+    }
 
     // Sync following to GitHub
     const { results: following } = await env.DB.prepare(`
@@ -175,8 +176,9 @@ export async function syncToGitHub(env: Env): Promise<{ synced: number }> {
       2
     );
 
-    await putGitHubFile(`accounts/${handle}/data/following.json`, followingJson, 'Sync following', env);
-    synced++;
+    if (await putGitHubFile(`accounts/${handle}/data/following.json`, followingJson, 'Sync following', env)) {
+      synced++;
+    }
 
     // Sync unsynced received activities
     const { results: activities } = await env.DB.prepare(`
@@ -218,8 +220,9 @@ export async function syncToGitHub(env: Env): Promise<{ synced: number }> {
         let allItems: unknown[] = existing ? JSON.parse(existing.content) : [];
         allItems.push(...items);
 
-        await putGitHubFile(path, JSON.stringify(allItems, null, 2), `Sync ${type}`, env);
-        synced++;
+        if (await putGitHubFile(path, JSON.stringify(allItems, null, 2), `Sync ${type}`, env)) {
+          synced++;
+        }
       }
     }
   }
@@ -296,11 +299,17 @@ export async function listGitHubFiles(path: string, env: Env): Promise<string[]>
   return data.filter(item => item.type === 'file').map(item => item.name);
 }
 
-async function putGitHubFile(path: string, content: string, message: string, env: Env): Promise<void> {
+async function putGitHubFile(path: string, content: string, message: string, env: Env): Promise<boolean> {
   const [owner, repo] = env.GITHUB_REPO.split('/');
   const url = `${GITHUB_API}/repos/${owner}/${repo}/contents/${path}`;
 
   const existing = await getGitHubFile(path, env);
+
+  // Skip if content is unchanged
+  if (existing && existing.content === content) {
+    return false;
+  }
+
   const body: { message: string; content: string; sha?: string } = { message, content: encodeBase64(content) };
   if (existing) body.sha = existing.sha;
 
@@ -318,6 +327,8 @@ async function putGitHubFile(path: string, content: string, message: string, env
   if (!response.ok) {
     throw new Error(`GitHub API error: ${response.status}`);
   }
+
+  return true;
 }
 
 function encodeBase64(str: string): string {
