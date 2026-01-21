@@ -9,7 +9,7 @@ import { handleFollowing } from './activitypub/following';
 import { handleNote, handleNoteActivity } from './activitypub/note';
 import { handleMedia } from './github/media';
 import { handleAdminSync, handleAdminPublish, handleAdminAccounts, handleAdminProcessQueue, handleAdminFollow, handleAdminUnfollow } from './admin/handlers';
-import { handleHomePage, handleProfilePage, handleFollowersPage, handleFollowingPage, handlePostPage } from './views/handlers';
+import { handleHomePage, handleProfilePage, handleFollowersPage, handleFollowingPage, handlePostPage } from './views/render';
 import { queueBackgroundSync } from './github/background-sync';
 import { notFoundResponse, unauthorizedResponse, errorResponse } from './utils/response';
 
