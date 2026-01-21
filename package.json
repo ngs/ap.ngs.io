@@ -13,7 +13,8 @@
     "follow": "node scripts/follow.js",
     "unfollow": "node scripts/follow.js --unfollow",
     "sync": "node scripts/sync.js",
-    "new-post": "node scripts/new-post.js"
+    "new-post": "node scripts/new-post.js",
+    "publish": "node scripts/publish.js"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20240117.0",

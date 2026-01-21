@@ -39,7 +39,7 @@ export async function handleNoteActivity(handle: string, postId: string, env: En
   return jsonResponse(activity);
 }
 
-function buildNote(post: Record<string, unknown>, handle: string, domain: string): APNote {
+export function buildNote(post: Record<string, unknown>, handle: string, domain: string): APNote {
   const visibility = post.visibility as string;
   const to: string[] = [];
   const cc: string[] = [];

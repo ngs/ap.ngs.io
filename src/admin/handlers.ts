@@ -1,8 +1,8 @@
 import { Env } from '../types';
 import { syncFromGitHub, syncToGitHub } from '../github/sync';
-import { broadcastToFollowers, processDeliveryQueue } from '../activitypub/delivery';
+import { processDeliveryQueue } from '../activitypub/delivery';
 import { followActor, unfollowActor } from '../activitypub/follow';
-import { ulid } from '../utils/ulid';
+import { publishNewPosts } from '../activitypub/publish';
 import { jsonResponse, errorResponse, badRequestResponse } from '../utils/response';
 
 interface SyncRequest {
@@ -40,52 +40,13 @@ export async function handleAdminSync(request: Request, env: Env): Promise<Respo
 export async function handleAdminPublish(request: Request, env: Env): Promise<Response> {
   try {
     const body = await request.json() as PublishRequest;
+    const result = await publishNewPosts(env, body.handle);
 
-    if (!body.handle) {
-      return badRequestResponse('handle is required');
-    }
-
-    // Get all posts that haven't been published yet (no activity in outbox_queue)
-    // For simplicity, we'll broadcast all recent posts
-    const { results } = await env.DB.prepare(`
-      SELECT * FROM posts
-      WHERE handle = ? AND visibility = 'public'
-      ORDER BY published_at DESC
-      LIMIT 10
-    `).bind(body.handle).all();
-
-    if (!results || results.length === 0) {
-      return jsonResponse({ success: true, published: 0 });
-    }
-
-    let published = 0;
-
-    for (const post of results) {
-      const activity = {
-        '@context': 'https://www.w3.org/ns/activitystreams',
-        id: `https://${env.DOMAIN}/users/${body.handle}/posts/${post.id}/activity`,
-        type: 'Create',
-        actor: `https://${env.DOMAIN}/users/${body.handle}`,
-        published: post.published_at,
-        to: ['https://www.w3.org/ns/activitystreams#Public'],
-        cc: [`https://${env.DOMAIN}/users/${body.handle}/followers`],
-        object: {
-          id: `https://${env.DOMAIN}/users/${body.handle}/posts/${post.id}`,
-          type: 'Note',
-          attributedTo: `https://${env.DOMAIN}/users/${body.handle}`,
-          content: post.content_html,
-          published: post.published_at,
-          to: ['https://www.w3.org/ns/activitystreams#Public'],
-          cc: [`https://${env.DOMAIN}/users/${body.handle}/followers`],
-          url: `https://${env.DOMAIN}/@${body.handle}/${post.id}`,
-        },
-      };
-
-      await broadcastToFollowers(body.handle, activity, env);
-      published++;
-    }
-
-    return jsonResponse({ success: true, published });
+    return jsonResponse({
+      success: true,
+      published: result.published,
+      posts: result.posts,
+    });
   } catch (error) {
     console.error('Publish error:', error);
     return errorResponse(`Publish error: ${error}`);

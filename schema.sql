@@ -26,6 +26,7 @@ CREATE TABLE IF NOT EXISTS posts (
   media_urls TEXT,          -- JSON array of local URLs
   tags TEXT,                -- JSON array
   visibility TEXT DEFAULT 'public',  -- public, unlisted, followers, direct
+  federated_at TEXT,        -- NULL if not yet broadcast to followers
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL,
   PRIMARY KEY (handle, id)
