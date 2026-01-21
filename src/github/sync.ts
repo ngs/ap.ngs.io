@@ -28,8 +28,8 @@ export async function syncFromGitHub(env: Env, handle?: string): Promise<{ synce
       await env.DB.prepare(`
         INSERT OR REPLACE INTO accounts
         (handle, name, summary, icon_url, image_url, public_key,
-         manually_approves_followers, discoverable, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?,
+         manually_approves_followers, discoverable, fields, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?,
                 COALESCE((SELECT created_at FROM accounts WHERE handle = ?), ?), ?)
       `).bind(
         h,
@@ -40,6 +40,7 @@ export async function syncFromGitHub(env: Env, handle?: string): Promise<{ synce
         publicKey?.content || '',
         data.manuallyApprovesFollowers ? 1 : 0,
         data.discoverable !== false ? 1 : 0,
+        data.fields ? JSON.stringify(data.fields) : null,
         h,
         new Date().toISOString(),
         new Date().toISOString()

@@ -18,6 +18,9 @@ export async function handleActor(handle: string, env: Env): Promise<Response> {
         'manuallyApprovesFollowers': 'as:manuallyApprovesFollowers',
         'discoverable': 'toot:discoverable',
         'toot': 'http://joinmastodon.org/ns#',
+        'schema': 'http://schema.org#',
+        'PropertyValue': 'schema:PropertyValue',
+        'value': 'schema:value',
       },
     ],
     id: `https://${env.DOMAIN}/users/${handle}`,
@@ -57,6 +60,20 @@ export async function handleActor(handle: string, env: Env): Promise<Response> {
       mediaType: 'image/png',
       url: account.image_url as string,
     };
+  }
+
+  // Profile metadata fields (for verified links)
+  if (account.fields) {
+    const fields = JSON.parse(account.fields as string) as Array<{ name: string; value: string }>;
+    if (fields.length > 0) {
+      actor.attachment = fields.map((field) => ({
+        type: 'PropertyValue',
+        name: field.name,
+        value: field.value.startsWith('http')
+          ? `<a href="${field.value}" target="_blank" rel="nofollow noopener noreferrer me">${field.value}</a>`
+          : field.value,
+      }));
+    }
   }
 
   return new Response(JSON.stringify(actor), {

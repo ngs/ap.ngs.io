@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS accounts (
   public_key TEXT NOT NULL,
   manually_approves_followers INTEGER DEFAULT 0,
   discoverable INTEGER DEFAULT 1,
+  fields TEXT,              -- JSON array of {name, value} for profile metadata
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL
 );

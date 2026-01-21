@@ -104,6 +104,11 @@ export interface APActor {
   endpoints?: {
     sharedInbox?: string;
   };
+  attachment?: Array<{
+    type: 'PropertyValue';
+    name: string;
+    value: string;
+  }>;
 }
 
 export interface APImage {
