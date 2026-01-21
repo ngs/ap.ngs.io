@@ -49,10 +49,13 @@ export async function syncFromGitHub(env: Env, handle?: string): Promise<{ synce
 
     // posts/*.md
     const postFiles = await listGitHubFiles(`accounts/${h}/posts`, env);
+    const postIds: string[] = [];
+
     for (const file of postFiles.filter(f => f.endsWith('.md'))) {
       const content = await getGitHubFile(`accounts/${h}/posts/${file}`, env);
       if (content) {
         const post = parsePostMarkdown(content.content, file, h, env.DOMAIN);
+        postIds.push(post.id);
 
         await env.DB.prepare(`
           INSERT OR REPLACE INTO posts
@@ -81,6 +84,17 @@ export async function syncFromGitHub(env: Env, handle?: string): Promise<{ synce
         ).run();
         synced++;
       }
+    }
+
+    // Delete posts that no longer exist in GitHub
+    if (postIds.length > 0) {
+      const placeholders = postIds.map(() => '?').join(',');
+      await env.DB.prepare(
+        `DELETE FROM posts WHERE handle = ? AND id NOT IN (${placeholders})`
+      ).bind(h, ...postIds).run();
+    } else {
+      // No posts in GitHub, delete all posts for this handle
+      await env.DB.prepare('DELETE FROM posts WHERE handle = ?').bind(h).run();
     }
 
     // Restore followers from GitHub (replace all)
