@@ -48,25 +48,47 @@ export async function handleOutbox(handle: string, url: URL, env: Env): Promise<
   const posts = results || [];
 
   // Convert posts to Create activities
-  const orderedItems = posts.map((post) => ({
-    '@context': 'https://www.w3.org/ns/activitystreams',
-    id: `https://${env.DOMAIN}/users/${handle}/posts/${post.id}/activity`,
-    type: 'Create',
-    actor: `https://${env.DOMAIN}/users/${handle}`,
-    published: post.published_at,
-    to: ['https://www.w3.org/ns/activitystreams#Public'],
-    cc: [`https://${env.DOMAIN}/users/${handle}/followers`],
-    object: {
-      id: `https://${env.DOMAIN}/users/${handle}/posts/${post.id}`,
-      type: 'Note',
-      attributedTo: `https://${env.DOMAIN}/users/${handle}`,
-      content: post.content_html,
+  const orderedItems = posts.map((post) => {
+    const mediaUrls = JSON.parse((post.media_urls as string) || '[]') as string[];
+    const attachment = mediaUrls.map((url) => {
+      const ext = url.split('.').pop()?.toLowerCase() || '';
+      const mediaTypes: Record<string, string> = {
+        jpg: 'image/jpeg',
+        jpeg: 'image/jpeg',
+        png: 'image/png',
+        gif: 'image/gif',
+        webp: 'image/webp',
+        mp4: 'video/mp4',
+        webm: 'video/webm',
+      };
+      return {
+        type: 'Document',
+        mediaType: mediaTypes[ext] || 'application/octet-stream',
+        url,
+      };
+    });
+
+    return {
+      '@context': 'https://www.w3.org/ns/activitystreams',
+      id: `https://${env.DOMAIN}/users/${handle}/posts/${post.id}/activity`,
+      type: 'Create',
+      actor: `https://${env.DOMAIN}/users/${handle}`,
       published: post.published_at,
       to: ['https://www.w3.org/ns/activitystreams#Public'],
       cc: [`https://${env.DOMAIN}/users/${handle}/followers`],
-      url: `https://${env.DOMAIN}/@${handle}/${post.id}`,
-    },
-  }));
+      object: {
+        id: `https://${env.DOMAIN}/users/${handle}/posts/${post.id}`,
+        type: 'Note',
+        attributedTo: `https://${env.DOMAIN}/users/${handle}`,
+        content: post.content_html,
+        published: post.published_at,
+        to: ['https://www.w3.org/ns/activitystreams#Public'],
+        cc: [`https://${env.DOMAIN}/users/${handle}/followers`],
+        url: `https://${env.DOMAIN}/@${handle}/${post.id}`,
+        ...(attachment.length > 0 && { attachment }),
+      },
+    };
+  });
 
   const collectionPage: APOrderedCollectionPage = {
     '@context': 'https://www.w3.org/ns/activitystreams',

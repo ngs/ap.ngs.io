@@ -2,6 +2,7 @@ import { Env } from '../types';
 import { homePage } from './home';
 import { profilePage } from './profile';
 import { followsPage } from './follows';
+import { postPage } from './post';
 
 export async function handleHomePage(env: Env): Promise<Response> {
   const { results } = await env.DB.prepare(
@@ -45,6 +46,17 @@ export async function handleProfilePage(handle: string, env: Env): Promise<Respo
     'SELECT COUNT(*) as count FROM posts WHERE handle = ?'
   ).bind(handle).first();
 
+  const { results: postsData } = await env.DB.prepare(
+    'SELECT id, content_html, published_at, media_urls FROM posts WHERE handle = ? AND visibility = ? ORDER BY published_at DESC LIMIT 20'
+  ).bind(handle, 'public').all();
+
+  const posts = (postsData || []).map(p => ({
+    id: p.id as string,
+    contentHtml: p.content_html as string,
+    publishedAt: p.published_at as string,
+    mediaUrls: JSON.parse((p.media_urls as string) || '[]') as string[],
+  }));
+
   const html = profilePage({
     handle: account.handle as string,
     name: account.name as string,
@@ -55,6 +67,7 @@ export async function handleProfilePage(handle: string, env: Env): Promise<Respo
     followersCount: (followersResult?.count as number) || 0,
     followingCount: (followingResult?.count as number) || 0,
     postsCount: (postsResult?.count as number) || 0,
+    posts,
   });
 
   return new Response(html, {
@@ -236,6 +249,42 @@ export async function handleFollowingPage(handle: string, url: URL, env: Env): P
     page,
     hasNext: results.length === limit,
     hasPrev: page > 1,
+  });
+
+  return new Response(html, {
+    headers: {
+      'Content-Type': 'text/html; charset=utf-8',
+      'Cache-Control': 'public, max-age=300',
+    },
+  });
+}
+
+export async function handlePostPage(handle: string, postId: string, env: Env): Promise<Response> {
+  const account = await env.DB.prepare(
+    'SELECT handle, name, icon_url FROM accounts WHERE handle = ?'
+  ).bind(handle).first();
+
+  if (!account) {
+    return new Response('Not Found', { status: 404 });
+  }
+
+  const post = await env.DB.prepare(
+    'SELECT id, content_html, published_at, media_urls FROM posts WHERE handle = ? AND id = ?'
+  ).bind(handle, postId).first();
+
+  if (!post) {
+    return new Response('Not Found', { status: 404 });
+  }
+
+  const html = postPage({
+    handle: account.handle as string,
+    name: account.name as string,
+    iconUrl: account.icon_url as string | null,
+    domain: env.DOMAIN,
+    postId: post.id as string,
+    contentHtml: post.content_html as string,
+    publishedAt: post.published_at as string,
+    mediaUrls: JSON.parse((post.media_urls as string) || '[]') as string[],
   });
 
   return new Response(html, {

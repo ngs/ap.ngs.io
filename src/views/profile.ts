@@ -1,5 +1,12 @@
 import { layout, escapeHtml } from './layout';
 
+interface PostData {
+  id: string;
+  contentHtml: string;
+  publishedAt: string;
+  mediaUrls: string[];
+}
+
 interface ProfileData {
   handle: string;
   name: string;
@@ -10,6 +17,7 @@ interface ProfileData {
   followersCount: number;
   followingCount: number;
   postsCount: number;
+  posts: PostData[];
 }
 
 export function profilePage(data: ProfileData): string {
@@ -37,13 +45,33 @@ export function profilePage(data: ProfileData): string {
           <p class="wb-break-word">${formatSummary(data.summary)}</p>
         </div>
         <div class="Box">
-          <div class="Box-header">
+          <div class="Box-header d-flex flex-items-center flex-justify-between">
             <h2 class="Box-title">Posts</h2>
+            <span class="Counter">${data.postsCount}</span>
           </div>
-          <div class="Box-body color-fg-muted">
-            <p>${data.postsCount} posts</p>
-            <a href="https://${escapeHtml(data.domain)}/users/${escapeHtml(data.handle)}/outbox" class="Link">View outbox (ActivityPub)</a>
-          </div>
+          ${data.posts.length > 0 ? data.posts.map(post => `
+            <div class="Box-row">
+              <div class="mb-2">${post.contentHtml}</div>
+              ${post.mediaUrls.length > 0 ? `
+                <div class="d-flex flex-wrap gap-2 mb-2">
+                  ${post.mediaUrls.map(url => `
+                    <a href="${escapeHtml(url)}" target="_blank">
+                      <img src="${escapeHtml(url)}" alt="" class="rounded-2" style="max-width: 200px; max-height: 200px; object-fit: cover;">
+                    </a>
+                  `).join('')}
+                </div>
+              ` : ''}
+              <div class="f6 color-fg-muted">
+                <a href="https://${escapeHtml(data.domain)}/@${escapeHtml(data.handle)}/${escapeHtml(post.id)}" class="Link--secondary">
+                  ${formatDate(post.publishedAt)}
+                </a>
+              </div>
+            </div>
+          `).join('') : `
+            <div class="Box-row color-fg-muted">
+              <p>No posts yet</p>
+            </div>
+          `}
         </div>
       </div>
     </div>
@@ -60,4 +88,15 @@ function formatSummary(summary: string): string {
       /(https?:\/\/[^\s<]+)/g,
       '<a href="$1" class="Link" rel="nofollow noopener" target="_blank">$1</a>'
     );
+}
+
+function formatDate(isoString: string): string {
+  const date = new Date(isoString);
+  return date.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
 }

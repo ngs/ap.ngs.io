@@ -9,7 +9,7 @@ import { handleFollowing } from './activitypub/following';
 import { handleNote, handleNoteActivity } from './activitypub/note';
 import { handleMedia } from './github/media';
 import { handleAdminSync, handleAdminPublish, handleAdminAccounts, handleAdminProcessQueue, handleAdminFollow, handleAdminUnfollow } from './admin/handlers';
-import { handleHomePage, handleProfilePage, handleFollowersPage, handleFollowingPage } from './views/handlers';
+import { handleHomePage, handleProfilePage, handleFollowersPage, handleFollowingPage, handlePostPage } from './views/handlers';
 import { queueBackgroundSync } from './github/background-sync';
 import { notFoundResponse, unauthorizedResponse, errorResponse } from './utils/response';
 
@@ -50,6 +50,21 @@ export class Router {
       const mediaMatch = path.match(/^\/media\/([^\/]+)\/(.+)$/);
       if (mediaMatch && method === 'GET') {
         return handleMedia(mediaMatch[1], mediaMatch[2], this.env);
+      }
+
+      // Post permalink (@handle/postId)
+      const atPostMatch = path.match(/^\/@([^\/]+)\/([^\/]+)$/);
+      if (atPostMatch && method === 'GET') {
+        const handle = atPostMatch[1];
+        const postId = atPostMatch[2];
+        const account = await this.getAccount(handle);
+        if (!account) {
+          return notFoundResponse();
+        }
+        if (this.wantsActivityPub(request)) {
+          return handleNote(handle, postId, this.env);
+        }
+        return handlePostPage(handle, postId, this.env);
       }
 
       // Profile page (@handle)
