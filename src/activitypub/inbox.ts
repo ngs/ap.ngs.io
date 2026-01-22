@@ -22,8 +22,8 @@ export async function handleInbox(
   request: Request,
   env: Env
 ): Promise<Response> {
-  // HTTP Signature verification
-  const verification = await verifyHttpSignature(request);
+  // HTTP Signature verification (with actor cache)
+  const verification = await verifyHttpSignature(request, env.DB);
   if (!verification.valid) {
     console.error('Signature verification failed:', verification.error);
     return unauthorizedResponse('Unauthorized: ' + verification.error);

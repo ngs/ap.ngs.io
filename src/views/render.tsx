@@ -224,6 +224,22 @@ export async function handleFollowingPage(handle: string, url: URL, env: Env): P
     const actorUrl = r.actor_url as string;
     const domain = new URL(actorUrl).hostname;
 
+    // First try to get from cache
+    const cached = await env.DB.prepare(
+      'SELECT name, preferred_username, icon_url FROM actor_cache WHERE actor_url = ?'
+    ).bind(actorUrl).first();
+
+    if (cached) {
+      return {
+        actorUrl,
+        name: cached.name as string | undefined,
+        preferredUsername: cached.preferred_username as string | undefined,
+        iconUrl: cached.icon_url as string | undefined,
+        domain,
+      };
+    }
+
+    // Fallback to fetching (may fail for servers requiring signed requests)
     try {
       const response = await fetch(actorUrl, {
         headers: {

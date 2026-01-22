@@ -102,6 +102,9 @@ export async function handleAdminFollow(request: Request, env: Env): Promise<Res
 
     const result = await followActor(body.handle, body.target, env);
 
+    // Sync following to GitHub
+    await syncToGitHub(env);
+
     return jsonResponse({
       success: result.success,
       actorId: result.actorId,
@@ -122,6 +125,9 @@ export async function handleAdminUnfollow(request: Request, env: Env): Promise<R
     }
 
     const result = await unfollowActor(body.handle, body.target, env);
+
+    // Sync following to GitHub
+    await syncToGitHub(env);
 
     return jsonResponse({
       success: result.success,

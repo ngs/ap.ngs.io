@@ -67,6 +67,18 @@ CREATE TABLE IF NOT EXISTS inbox_activities (
   synced_to_github INTEGER DEFAULT 0
 );
 
+-- Actor Cache (for signature verification and display)
+CREATE TABLE IF NOT EXISTS actor_cache (
+  actor_url TEXT PRIMARY KEY,
+  inbox_url TEXT NOT NULL,
+  shared_inbox_url TEXT,
+  public_key_pem TEXT NOT NULL,
+  name TEXT,
+  preferred_username TEXT,
+  icon_url TEXT,
+  fetched_at TEXT NOT NULL
+);
+
 -- Delivery Queue (for retries)
 CREATE TABLE IF NOT EXISTS delivery_queue (
   id INTEGER PRIMARY KEY AUTOINCREMENT,

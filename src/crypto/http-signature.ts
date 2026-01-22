@@ -101,7 +101,18 @@ export async function signGetRequest(
   });
 }
 
-export async function verifyHttpSignature(request: Request): Promise<SignatureVerification> {
+interface D1Database {
+  prepare(query: string): {
+    bind(...values: unknown[]): {
+      first(): Promise<Record<string, unknown> | null>;
+    };
+  };
+}
+
+export async function verifyHttpSignature(
+  request: Request,
+  db?: D1Database
+): Promise<SignatureVerification> {
   const signatureHeader = request.headers.get('Signature');
   if (!signatureHeader) {
     return { valid: false, error: 'Missing Signature header' };
@@ -124,25 +135,42 @@ export async function verifyHttpSignature(request: Request): Promise<SignatureVe
 
   // Fetch Actor's public key
   const actorUrl = keyId.split('#')[0];
-  let publicKeyPem: string;
+  let publicKeyPem: string | null = null;
 
-  try {
-    const actorResponse = await fetch(actorUrl, {
-      headers: { 'Accept': 'application/activity+json, application/ld+json' },
-    });
-
-    if (!actorResponse.ok) {
-      return { valid: false, error: `Failed to fetch actor: ${actorResponse.status}` };
+  // First, try to get from cache
+  if (db) {
+    try {
+      const cached = await db.prepare(
+        'SELECT public_key_pem FROM actor_cache WHERE actor_url = ?'
+      ).bind(actorUrl).first();
+      if (cached?.public_key_pem) {
+        publicKeyPem = cached.public_key_pem as string;
+      }
+    } catch (e) {
+      console.error('Actor cache lookup error:', e);
     }
+  }
 
-    const actor = await actorResponse.json() as { publicKey?: { publicKeyPem?: string } };
-    publicKeyPem = actor.publicKey?.publicKeyPem || '';
+  // If not in cache, fetch from network
+  if (!publicKeyPem) {
+    try {
+      const actorResponse = await fetch(actorUrl, {
+        headers: { 'Accept': 'application/activity+json, application/ld+json' },
+      });
 
-    if (!publicKeyPem) {
-      return { valid: false, error: 'No public key found' };
+      if (!actorResponse.ok) {
+        return { valid: false, error: `Failed to fetch actor: ${actorResponse.status}` };
+      }
+
+      const actor = await actorResponse.json() as { publicKey?: { publicKeyPem?: string } };
+      publicKeyPem = actor.publicKey?.publicKeyPem || null;
+    } catch (e) {
+      return { valid: false, error: `Actor fetch error: ${e}` };
     }
-  } catch (e) {
-    return { valid: false, error: `Actor fetch error: ${e}` };
+  }
+
+  if (!publicKeyPem) {
+    return { valid: false, error: 'No public key found' };
   }
 
   // Reconstruct signed string

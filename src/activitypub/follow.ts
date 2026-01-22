@@ -10,6 +10,7 @@ interface ActorInfo {
   preferredUsername: string;
   name?: string;
   icon?: string;
+  publicKeyPem?: string;
 }
 
 interface SigningContext {
@@ -74,6 +75,7 @@ export async function resolveActor(
     preferredUsername: string;
     name?: string;
     icon?: { url?: string } | string;
+    publicKey?: { publicKeyPem?: string };
   };
 
   return {
@@ -83,6 +85,7 @@ export async function resolveActor(
     preferredUsername: actor.preferredUsername,
     name: actor.name,
     icon: typeof actor.icon === 'object' ? actor.icon?.url : actor.icon,
+    publicKeyPem: actor.publicKey?.publicKeyPem,
   };
 }
 
@@ -98,6 +101,24 @@ export async function followActor(
 
   const signing = privateKeyPem ? { privateKeyPem, keyId } : undefined;
   const actor = await resolveActor(targetActorId, signing);
+
+  // Cache actor for signature verification and display
+  if (actor.publicKeyPem) {
+    await env.DB.prepare(`
+      INSERT OR REPLACE INTO actor_cache
+      (actor_url, inbox_url, shared_inbox_url, public_key_pem, name, preferred_username, icon_url, fetched_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `).bind(
+      actor.id,
+      actor.inbox,
+      actor.sharedInbox || null,
+      actor.publicKeyPem,
+      actor.name || null,
+      actor.preferredUsername,
+      actor.icon || null,
+      new Date().toISOString()
+    ).run();
+  }
 
   // Check if already following
   const existing = await env.DB.prepare(
