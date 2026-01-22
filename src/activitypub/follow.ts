@@ -1,6 +1,7 @@
 import { Env } from '../types';
 import { sendActivity } from './delivery';
 import { ulid } from '../utils/ulid';
+import { signGetRequest } from '../crypto/http-signature';
 
 interface ActorInfo {
   id: string;
@@ -11,7 +12,15 @@ interface ActorInfo {
   icon?: string;
 }
 
-export async function resolveActor(actorId: string): Promise<ActorInfo> {
+interface SigningContext {
+  privateKeyPem: string;
+  keyId: string;
+}
+
+export async function resolveActor(
+  actorId: string,
+  signing?: SigningContext
+): Promise<ActorInfo> {
   // If it's an acct: URI, resolve via WebFinger first
   if (actorId.startsWith('acct:') || actorId.includes('@') && !actorId.startsWith('http')) {
     const acct = actorId.replace('acct:', '');
@@ -41,13 +50,18 @@ export async function resolveActor(actorId: string): Promise<ActorInfo> {
     actorId = selfLink.href;
   }
 
-  // Fetch the actor
-  const response = await fetch(actorId, {
-    headers: {
+  // Fetch the actor (with optional signing)
+  let headers: Headers;
+  if (signing) {
+    headers = await signGetRequest(actorId, signing.privateKeyPem, signing.keyId);
+  } else {
+    headers = new Headers({
       'Accept': 'application/activity+json, application/ld+json',
       'User-Agent': 'ActivityPub-Server',
-    },
-  });
+    });
+  }
+
+  const response = await fetch(actorId, { headers });
 
   if (!response.ok) {
     throw new Error(`Failed to fetch actor: ${response.status}`);
@@ -77,7 +91,13 @@ export async function followActor(
   targetActorId: string,
   env: Env
 ): Promise<{ success: boolean; actorId: string }> {
-  const actor = await resolveActor(targetActorId);
+  // Get private key for signing
+  const privateKeyName = `PRIVATE_KEY_${handle}`;
+  const privateKeyPem = (env as Record<string, string>)[privateKeyName];
+  const keyId = `https://${env.DOMAIN}/users/${handle}#main-key`;
+
+  const signing = privateKeyPem ? { privateKeyPem, keyId } : undefined;
+  const actor = await resolveActor(targetActorId, signing);
 
   // Check if already following
   const existing = await env.DB.prepare(

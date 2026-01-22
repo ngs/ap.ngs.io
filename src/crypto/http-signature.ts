@@ -58,6 +58,49 @@ export async function signRequest(
   });
 }
 
+export async function signGetRequest(
+  targetUrl: string,
+  privateKeyPem: string,
+  keyId: string
+): Promise<Headers> {
+  const url = new URL(targetUrl);
+  const date = new Date().toUTCString();
+
+  // Signing target for GET (no digest or content-type)
+  const signedHeaders = '(request-target) host date accept';
+  const acceptHeader = 'application/activity+json, application/ld+json';
+  const signedString = [
+    `(request-target): get ${url.pathname}`,
+    `host: ${url.host}`,
+    `date: ${date}`,
+    `accept: ${acceptHeader}`,
+  ].join('\n');
+
+  // Sign
+  const privateKey = await importPrivateKey(privateKeyPem);
+  const signatureBuffer = await crypto.subtle.sign(
+    { name: 'RSASSA-PKCS1-v1_5' },
+    privateKey,
+    new TextEncoder().encode(signedString)
+  );
+  const signatureBase64 = arrayBufferToBase64(signatureBuffer);
+
+  const signatureHeader = [
+    `keyId="${keyId}"`,
+    `algorithm="rsa-sha256"`,
+    `headers="${signedHeaders}"`,
+    `signature="${signatureBase64}"`,
+  ].join(',');
+
+  return new Headers({
+    'Host': url.host,
+    'Date': date,
+    'Accept': acceptHeader,
+    'User-Agent': 'ActivityPub-Server/1.0',
+    'Signature': signatureHeader,
+  });
+}
+
 export async function verifyHttpSignature(request: Request): Promise<SignatureVerification> {
   const signatureHeader = request.headers.get('Signature');
   if (!signatureHeader) {
